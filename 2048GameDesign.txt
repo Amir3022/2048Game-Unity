@@ -1,0 +1,31 @@
+1- Create the square Grid to be used as the tile base for our 4x4 grid
+2- Create a tile to populate a certain grid node 
+3- movement with arrows will move all possible to move nodes to the intended direction until it hits the border or another tile
+4- any 2 tiles hitting having the same number will consilidate into one tile with double the number
+5- When making a move, a random tile with 2 (80% chance) or 4(20% chance) will spawn in random empty spot at the opposite border
+
+Realization: 
+1- Make the grid that holds the tile, make it at first static 4x4 grid then we can introduce the idea of dynamic grids
+2- create the node that holds a number and that can move in vertical and horizontal direction on a grid, collides and stops when hitting grid border
+3- the tile has a darker color as the number it holds increases
+
+
+Steps taken so far
+1- created a 4x4 grid, the grid size is 8*8, each tile movement for 1 step will be +2 in intented direction
+2-
+
+Steps to create the save game system:
+How it should work:
+	. The save game system should save current tiles positions and score with each score calculation and store them as save game
+	. When closing and openning the game again it should spawn each tile in it's location with the correct score
+	. Loading system is also used to rewind to last move
+
+Design:
+	. GameDataSC class to store the state of data we want to save
+	. DataPresistanceManager, a singelton class that manages the logic of saving loading and creating a new game instance
+	. Create IDataPersistenceInterface, which is implemented by any script that needs to load or save data
+	. FilaDataHandler managed by DaraPersistenceManager to write data into an external file in the json file, as well as reading data from external file and loading into CS scripts
+	. Add the option to encrypt the json data
+
+Steps: 
+	. Create     
