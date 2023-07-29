@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 
-public class GameModeLogic : MonoBehaviour
+public class GameModeLogic : MonoBehaviour, IDataPersistence
 {
     private int CurrentScore;
     private int LastAddedScore;
@@ -12,26 +12,19 @@ public class GameModeLogic : MonoBehaviour
     public GameObject GameOverScreen;
     public GameObject GameWinScreen;
     // Start is called before the first frame update
+
     void Start()
     {
         CurrentScore = 0;
         LastAddedScore = 0;
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
+        StartNewGame(GameInstanceLogic.Instance.GetLoadSession(), GameInstanceLogic.Instance.GetLoadCurrent());       
     }
 
     public void AddScore(int inScore)
     {
         CurrentScore += inScore;
         LastAddedScore = inScore;
-        if(ScoreBox)
-        {
-            ScoreBox.text = $"Score: {CurrentScore}";
-        }
+        UpdateScoreUI();
     }
 
     public void SetGameOverScreen()
@@ -52,6 +45,55 @@ public class GameModeLogic : MonoBehaviour
         if(GameWinScreen)
         {
             GameWinScreen.SetActive(true);
+        }
+    }
+
+    public void SaveData(ref GameData gameData)
+    {
+        gameData.CurrentScore= CurrentScore;
+        gameData.PreviousScore = CurrentScore - LastAddedScore;
+        GameInstanceLogic.Instance.SetCanRevert();
+    }
+
+    public void LoadData(GameData gameData)
+    {
+        CurrentScore = gameData.CurrentScore;
+        LastAddedScore = CurrentScore - gameData.PreviousScore;
+    }
+
+    public void CurrentMoveOver()
+    {
+        DataPersistenceManager.instance.SaveGame();
+        UpdateScoreUI();
+    }
+
+    private void UpdateScoreUI()
+    {
+        if (ScoreBox)
+        {
+            ScoreBox.text = $"Score: {CurrentScore}";
+        }
+    }
+
+    public void StartNewGame(bool bLoadGame, bool bLoadCurrent)
+    {
+        if (bLoadGame)
+        {
+            DataPersistenceManager.instance.LoadGame();
+            CurrentScore = bLoadCurrent ? CurrentScore : CurrentScore - LastAddedScore;
+        }
+        else
+            DataPersistenceManager.instance.NewGame();
+        
+        UpdateScoreUI();
+        GridScript GridRef = GameObject.FindGameObjectWithTag("Grid Tag").GetComponent<GridScript>();
+        if(GridRef != null)
+        {
+            GridRef.StartGameOnGrid(bLoadCurrent);
+        }
+        else
+        {
+            Debug.Log("Error, Couldn't find the GridGame Object");
         }
     }
 }
