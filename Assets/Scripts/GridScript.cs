@@ -2,9 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.SocialPlatforms.Impl;
 using UnityEngine.TerrainUtils;
 
-public class GridScript : MonoBehaviour
+public class GridScript : MonoBehaviour, IDataPersistence
 {
     public GameObject TileObject;
     public Color TileInitialColor;
@@ -20,27 +21,56 @@ public class GridScript : MonoBehaviour
     private List<Vector2> GridPositions;
     private List<TileData> CurrentTilesData;
     private List<TileData> PreviousTilesData;
+    private List<TileData> LastTurnTilesData;
     private Vector2 MoveDir;
     private int NumberOfTiles;
     bool bTilesMoving = false;
     private GameModeLogic GameModeRef;
     // Start is called before the first frame update
-    void Start()
+
+    void Awake()
     {
-        GameModeRef = GameObject.FindGameObjectWithTag("GameModeTag").GetComponent<GameModeLogic>();
         MoveDir = new Vector2(0.0f, 0.0f);
         SpawnedTiles = new List<GameObject>();
         TilesPositions = new List<Vector2>();
         GridPositions = new List<Vector2>();
         PreviousTilesData = new List<TileData>();
         CurrentTilesData = new List<TileData>();
+        LastTurnTilesData = new List<TileData>();
         Vector3 Origin = transform.position;
-        BottomLeft.x = Origin.x +stepSize - (nColumns/2)*tileSize;
-        BottomLeft.y = Origin.y +stepSize - (nRows/2)*tileSize;
-        TopRight.x = Origin.x -stepSize + (nColumns/2)*tileSize;
-        TopRight.y = Origin.y -stepSize + (nRows/2)*tileSize;
+        BottomLeft.x = Origin.x + stepSize - (nColumns / 2) * tileSize;
+        BottomLeft.y = Origin.y + stepSize - (nRows / 2) * tileSize;
+        TopRight.x = Origin.x - stepSize + (nColumns / 2) * tileSize;
+        TopRight.y = Origin.y - stepSize + (nRows / 2) * tileSize;
         GenerateGridPositionsList();
-        SpawnTileAtLocation(Random.Range(1, nColumns-1), Random.Range(1, nRows-1));
+    }
+
+    void Start()
+    {
+        GameModeRef = GameObject.FindGameObjectWithTag("GameModeTag").GetComponent<GameModeLogic>();
+    }
+
+    public void StartGameOnGrid(bool bLoadCurrent)
+    {
+        if(CurrentTilesData.Count > 0 && LastTurnTilesData.Count > 0)
+        {
+            if (bLoadCurrent)
+            {
+                foreach (TileData Tile in CurrentTilesData)
+                {
+                    SpawnTileAtPos(Tile.TilePos, Tile.TileScore);
+                }
+            }
+            else
+            {
+                foreach (TileData Tile in LastTurnTilesData)
+                {
+                    SpawnTileAtPos(Tile.TilePos, Tile.TileScore);
+                }
+            }
+        }
+        else
+            SpawnTileAtIndex(Random.Range(1, nColumns - 1), Random.Range(1, nRows - 1));
     }
 
     // Update is called once per frame
@@ -68,6 +98,7 @@ public class GridScript : MonoBehaviour
                 MoveDir.x = -1.0f;
                 MoveDir.y = 0.0f;
             }
+            FillLastTurnTilesData();
             MoveTiles(MoveDir);
             bTilesMoving = true;
         }
@@ -75,13 +106,17 @@ public class GridScript : MonoBehaviour
         if(!CheckIfAnyTileIsMoving() && bTilesMoving)
         {
             bTilesMoving = false;
-            FillCurrentTilesData(true);
+            FillCurrentTilesData(false);
             if (!ComparePreviousAndCurrentTilesData())
             {
                 SpawnNewTileWithMove();
             }
             ResetConslidationAbilityToTiles();
-            FillCurrentTilesData(false);
+            FillCurrentTilesData(true);
+            if(GameModeRef)
+            {
+                GameModeRef.CurrentMoveOver();
+            }
         }
 
         if (GetCurrentTilesOnGrid() >= nRows * nColumns && bCanMoveTiles)
@@ -97,7 +132,7 @@ public class GridScript : MonoBehaviour
         }
     }
 
-    private GameObject SpawnTileAtLocation(int _x, int _y)
+    private GameObject SpawnTileAtIndex(int _x, int _y, int Score = -1)
     {
          if(_x < nColumns && _y < nRows)
          {
@@ -108,15 +143,40 @@ public class GridScript : MonoBehaviour
                 SpawnedTiles.Add(SpawnedTile);
                 SpawnedTile.GetComponent<TileScript>().SetBorderVariables(BottomLeft, TopRight);
                 SpawnedTile.GetComponent<TileScript>().SetGridRef(this);
-                SpawnedTile.GetComponent<TileScript>().SetColor(TileInitialColor);
-                int randInt = Random.Range(0, 10);
-                int InitialScore = randInt % 5 == 0 ? 4 : 2;
-                SpawnedTile.GetComponent<TileScript>().SetTileScore(InitialScore);
+                SpawnedTile.GetComponent<TileScript>().SetBaseColor(TileInitialColor);
+                if (Score == -1)
+                {
+                    int randInt = Random.Range(0, 10);
+                    int InitialScore = randInt % 5 == 0 ? 4 : 2;
+                    Score = InitialScore;
+                }
+                SpawnedTile.GetComponent<TileScript>().SetTileScore(Score);
 
                 return SpawnedTile;
             }
          }
          return null;
+    }
+
+    private GameObject SpawnTileAtPos(Vector2 Pos, int Score)
+    {
+        Vector2 SpawnLoc = new Vector3(Pos.x, Pos.y, transform.position.z);
+        GameObject SpawnedTile = Instantiate(TileObject, SpawnLoc, transform.rotation);
+        if (SpawnedTile)
+            {
+            SpawnedTiles.Add(SpawnedTile);
+            SpawnedTile.GetComponent<TileScript>().SetBorderVariables(BottomLeft, TopRight);
+            SpawnedTile.GetComponent<TileScript>().SetGridRef(this);
+            SpawnedTile.GetComponent<TileScript>().SetBaseColor(TileInitialColor);
+            if (Score == -1)
+            {
+                int randInt = Random.Range(0, 10);
+                int InitialScore = randInt % 5 == 0 ? 4 : 2;
+                Score = InitialScore;
+            }
+            SpawnedTile.GetComponent<TileScript>().SetTileScore(Score);
+        }
+        return SpawnedTile;
     }
 
     private void SpawnNewTileWithMove()
@@ -133,7 +193,7 @@ public class GridScript : MonoBehaviour
                 yIndex = Random.Range(0, nRows);
                 RandomSpawnLocation = new Vector2(BottomLeft.x + (float)xIndex * tileSize, BottomLeft.y + (float)yIndex* tileSize);
             }while(TilesPositions.Contains(RandomSpawnLocation));
-            SpawnTileAtLocation(xIndex, yIndex);
+            SpawnTileAtIndex(xIndex, yIndex);
         }
         else
         {
@@ -268,6 +328,19 @@ public class GridScript : MonoBehaviour
         }
     }
 
+    private void FillLastTurnTilesData()
+    {
+        LastTurnTilesData.Clear();
+        foreach (GameObject Tile in SpawnedTiles)
+        {
+            if (Tile && Tile.GetComponent<TileScript>())
+            {
+                TileData TileToAdd = new TileData(Tile.GetComponent<TileScript>().GetPosition2D(), Tile.GetComponent<TileScript>().GetTileScore());
+                LastTurnTilesData.Add(TileToAdd);
+            }
+        }
+    }
+
     private bool ComparePreviousAndCurrentTilesData()
     {
         if (CurrentTilesData.Count != PreviousTilesData.Count)
@@ -368,5 +441,33 @@ public class GridScript : MonoBehaviour
             }
         }
         return false;
+    }
+
+    public void SaveData(ref GameData gameData)
+    {
+        gameData.CurrentTiles.Clear();
+        gameData.PreviousTiles.Clear();
+        foreach(TileData CurrentTile in CurrentTilesData) 
+        {
+            gameData.CurrentTiles.Add(CurrentTile);
+        }
+        foreach(TileData PreviousTile in LastTurnTilesData)
+        {
+            gameData.PreviousTiles.Add(PreviousTile);
+        }
+    }
+
+    public void LoadData(GameData gameData)
+    {
+        CurrentTilesData.Clear();
+        LastTurnTilesData.Clear();
+        foreach(TileData CurrentTile in gameData.CurrentTiles)
+        {
+            CurrentTilesData.Add(CurrentTile);
+        }
+        foreach(TileData PreviousTile in gameData.PreviousTiles) 
+        {
+            LastTurnTilesData.Add(PreviousTile);
+        }
     }
 }
