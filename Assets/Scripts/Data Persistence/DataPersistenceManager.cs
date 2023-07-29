@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using UnityEngine;
-using Unity.VisualScripting.Dependencies.Sqlite;
 using System;
 
 public class DataPersistenceManager: MonoBehaviour
@@ -24,9 +23,13 @@ public class DataPersistenceManager: MonoBehaviour
     {
         if(!instance)
         {
-            Debug.Log("Only one instance of the Data Persistence manager can be created per game");
+            instance = this;
         }
-        instance = this;
+        else
+        {
+            Destroy(gameObject);
+        }
+        
         SaveGamePath = Path.Combine(Application.dataPath, "SaveGames");
     }
 
