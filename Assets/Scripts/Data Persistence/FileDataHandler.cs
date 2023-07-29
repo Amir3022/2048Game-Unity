@@ -77,7 +77,7 @@ public class FileDataHandler
         string EncryptedWord = "";
         for(int i = 0; i < data.Length; i++) 
         {
-            EncryptedWord += data[i] ^ EncryptionWord[i% EncryptionWord.Length];
+            EncryptedWord += (char)(data[i] ^ EncryptionWord[i% EncryptionWord.Length]);
         }
         return EncryptedWord;
     }
