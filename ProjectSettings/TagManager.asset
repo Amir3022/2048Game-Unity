@@ -5,6 +5,8 @@ TagManager:
   serializedVersion: 2
   tags:
   - GameModeTag
+  - GameInstanceTag
+  - Grid Tag
   layers:
   - Default
   - TransparentFX
