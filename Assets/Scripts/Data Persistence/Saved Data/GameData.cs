@@ -8,6 +8,7 @@ public class GameData
     public List<TileData> CurrentTiles;
     public List<TileData> PreviousTiles;
     public int CurrentScore;
+    public int PreviousScore;
 
     public GameData()
     {
