@@ -2,10 +2,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[System.Serializable]
 public struct TileData
 {
-    public Vector2 TilePos;
-    public int TileScore;
+    [SerializeField] public Vector2 TilePos;
+    [SerializeField] public int TileScore;
     public TileData(Vector2 inPos, int inScore)
     {
         TilePos = inPos;
