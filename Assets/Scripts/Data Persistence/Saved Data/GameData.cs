@@ -5,12 +5,14 @@ using UnityEngine;
 [System.Serializable]
 public class GameData
 {
-    public List<TileData> Tiles;
+    public List<TileData> CurrentTiles;
+    public List<TileData> PreviousTiles;
     public int CurrentScore;
 
     public GameData()
     {
-        Tiles = new List<TileData>();
+        CurrentTiles = new List<TileData>();
+        PreviousTiles = new List<TileData>();
         CurrentScore = 0;
     }
 }
