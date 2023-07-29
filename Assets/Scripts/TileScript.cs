@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Unity.Mathematics;
 
 public class TileScript : MonoBehaviour
 {
@@ -16,18 +17,24 @@ public class TileScript : MonoBehaviour
     private Vector2 GridTopRightBorder;
     private GridScript GridRef;
     private int TileScore = 2;
+    private Color BaseColor;
     private bool bCanConsolidate = true;
     private bool bConsolidatedATile = false;
     private Vector2 NextTileLocation;
     private bool bSpawning;
     private GameModeLogic GameModeRef;
     // Start is called before the first frame update
-    void Start()
+
+    void Awake()
     {
-        GameModeRef = GameObject.FindGameObjectWithTag("GameModeTag").GetComponent<GameModeLogic>();
         curDir = new Vector2(0.0f, 0.0f);
         transform.localScale = new Vector3(0.0f, 0.0f, 0.0f);
         bSpawning = true;
+    }
+
+    void Start()
+    {
+        GameModeRef = GameObject.FindGameObjectWithTag("GameModeTag").GetComponent<GameModeLogic>();
     }
 
     // Update is called once per frame
@@ -148,16 +155,18 @@ public class TileScript : MonoBehaviour
         }
     }
 
+    public void SetBaseColor(Color InColor)
+    {
+        BaseColor= InColor;
+    }
+
     public void SetTileScore(int InScore)
     {
-        if (TileScore != InScore)
+        TileScore = InScore;
+        UpdateTileColor();
+        if (TextObject && TextObject.GetComponent<TextMesh>())
         {
-            TileScore = InScore;
-            UpdateTileColor();
-            if (TextObject && TextObject.GetComponent<TextMesh>())
-            {
-                TextObject.GetComponent<TextMesh>().text = TileScore.ToString();
-            }
+            TextObject.GetComponent<TextMesh>().text = TileScore.ToString();
         }
     }
 
@@ -170,7 +179,7 @@ public class TileScript : MonoBehaviour
     {
         if (RendererReference)
         {
-            Color NewColor = RendererReference.color * 0.9f;
+            Color NewColor = BaseColor * (math.pow(0.9f, math.log2(TileScore)));
             NewColor.a = 255;
             SetColor(NewColor);
         }
